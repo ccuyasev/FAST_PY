@@ -10,7 +10,7 @@ PORTS_CONNECTED = Tuple['Port', 'Port']
 
 class Topology:
     def __init__(self):
-        self.G = nx.Graph()
+        self.G = nx.DiGraph()
         self.links: Dict[HOP, PORTS_CONNECTED] = {}
         self.linkDelay = 0.05
         self.devices: Dict[int, Device] = {}
@@ -36,28 +36,22 @@ class Topology:
         for node in nodes:
             self.add_node(node)
 
+
     def add_edge(self, node1: Device, node2: Device, port1 = -1, port2 = -1):
+        self.add_edge_directed(node1, node2, port1, port2)
+        self.add_edge_directed(node2, node1, port2, port1)
+
+    def add_edge_directed(self, node1: Device, node2: Device, port1 = -1, port2 = -1):
         if port1 != -1:
             port1: Port = node1.ports[port1]
         else:
             port1 = node1.ports[node1.portid]
             node1.portid += 1
-            
-        if port2 != -1:
-            port2: Port = node2.ports[port2]
-        else:
-            port2 = node2.ports[node2.portid]
-            node2.portid += 1
-        
+
         
         self.G.add_edge(node1, node2)
-        self.G.add_edge(node2, node1)
-        
         port1.to = port2
-        port2.to = port1
-        
         self.links[(node1, node2)] = (port1, port2)
-        self.links[(node2, node1)] = (port2, port1)
         
 
 
@@ -83,6 +77,16 @@ def example_topo(topo = 'line') -> Topology:
         G.add_nodes(S + ES)
         for i in range(len(S)):
             G.add_edge(S[i], S[(i+1)%len(S)])
+        for i in range(len(ES)):
+            G.add_edge(S[i], ES[i])
+
+    elif topo == 'di-ring':
+        """ directed ring topology """
+        S = [Switch(i) for i in range(num)]
+        ES = [EndSystem(i) for i in range(200, 200 + num)]
+        G.add_nodes(S + ES)
+        for i in range(len(S)):
+            G.add_edge_directed(S[i], S[(i+1)%len(S)])
         for i in range(len(ES)):
             G.add_edge(S[i], ES[i])
             
