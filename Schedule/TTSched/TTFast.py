@@ -136,7 +136,7 @@ class TTFast(Schedule):
         process_result(flows, self.slot)
         
     def select_edge_to_remove(self, cycle):
-        """返回环中流最少的边"""
+        """返回环中最紧急的边"""
         urgency_on_edges = {}
         
         for edge in cycle:
@@ -144,10 +144,11 @@ class TTFast(Schedule):
             hop_to = edge[1]
             port = self.G.links[hop_from][0]
             flows = [f for f in port.queues[TT].flows if f.status == FLOW_SCHEDULABLE and hop_to in f.hops and f in self.flows]
+            if len(flows) == len(self.flows):
+                continue
             urgency_on_edges[edge] = sum([f.ddl / len(f.hops) for f in flows]) / len(flows)
         
-        urgency_on_edges = normalize_dict(urgency_on_edges)
-        return max(urgency_on_edges, key=urgency_on_edges.get)           
+        return max(urgency_on_edges, key=urgency_on_edges.get)                 
 
     def run(self):
         while self.flows != []:
